@@ -18,9 +18,10 @@
     "web": "expo start --web",
     "electron": "electron ./electron/main.js",
     "electron:dev": "concurrently -k -s first \"npm run web\" \"wait-on tcp:8081 && electron ./electron/main.js\"",
+    "clean:win": "node -e \"const fs=require('fs'); ['release/win-unpacked','release/win-unpacked.tmp'].forEach(p => fs.rmSync(p, {recursive:true, force:true}))\"",
     "build:web": "expo export --platform web",
-    "build:win": "npm run build:web && electron-builder --win",
-    "build:portable": "npm run build:web && electron-builder --win portable"
+    "build:win": "npm run clean:win && npm run build:web && electron-builder --win",
+    "build:portable": "npm run clean:win && npm run build:web && electron-builder --win portable"
   },
   "build": {
     "appId": "com.timemanagement.app",
