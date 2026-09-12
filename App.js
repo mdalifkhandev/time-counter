@@ -177,6 +177,7 @@ export default function App() {
 
   // Timer reference
   const timerRef = useRef(null);
+  const targetTimestampRef = useRef(null);
 
   // Detect Electron environment and sync always-on-top
   useEffect(() => {
@@ -290,7 +291,9 @@ export default function App() {
     setTargetMinute(cleanMinute);
 
     const target = getTargetDate(cleanHour, cleanMinute, targetPeriod);
-    const diffSeconds = Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
+    const targetMs = target.getTime();
+    targetTimestampRef.current = targetMs;
+    const diffSeconds = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
 
     if (diffSeconds <= 0) return;
 
@@ -312,6 +315,7 @@ export default function App() {
   // Stop / Reset Countdown
   const handleReset = () => {
     handleStopRinging();
+    targetTimestampRef.current = null;
     setIsActive(false);
     setIsCompleted(false);
     setRemainingSeconds(0);
@@ -323,6 +327,7 @@ export default function App() {
   const handleQuickAdd = (minutesToAdd) => {
     handleStopRinging();
     const futureDate = new Date(Date.now() + minutesToAdd * 60 * 1000);
+    targetTimestampRef.current = futureDate.getTime();
     let hours = futureDate.getHours();
     const minutes = futureDate.getMinutes();
     const period = hours >= 12 ? "PM" : "AM";
@@ -344,35 +349,56 @@ export default function App() {
     setIsCompleted(false);
   };
 
-  // Countdown loop
-  useEffect(() => {
-    if (isActive && remainingSeconds > 0) {
-      timerRef.current = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            setIsActive(false);
-            setIsCompleted(true);
-            setIsRinging(true);
-            alarmRinger.start();
-            try {
-              Vibration.vibrate([0, 500, 250, 500, 250, 500], true);
-            } catch (e) { }
+  const triggerAlarmCompletion = () => {
+    setIsActive(false);
+    setIsCompleted(true);
+    setIsRinging(true);
+    alarmRinger.start();
+    try {
+      Vibration.vibrate([0, 500, 250, 500, 250, 500], true);
+    } catch (e) { }
 
-            if (typeof window !== "undefined" && window.electronAPI?.notifyTimeUp) {
-              window.electronAPI.notifyTimeUp();
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (typeof window !== "undefined" && window.electronAPI?.notifyTimeUp) {
+      window.electronAPI.notifyTimeUp();
+    }
+  };
+
+  const checkCountdownTick = () => {
+    if (!targetTimestampRef.current || !isActive) return;
+    const now = Date.now();
+    const diff = Math.max(0, Math.ceil((targetTimestampRef.current - now) / 1000));
+    if (diff <= 0) {
+      setRemainingSeconds(0);
+      targetTimestampRef.current = null;
+      triggerAlarmCompletion();
+    } else {
+      setRemainingSeconds(diff);
+    }
+  };
+
+  // Real-time countdown loop
+  useEffect(() => {
+    if (isActive && targetTimestampRef.current) {
+      checkCountdownTick();
+      timerRef.current = setInterval(() => {
+        checkCountdownTick();
+      }, 500);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, remainingSeconds]);
+  }, [isActive]);
+
+  // Native Android PiP periodic ticker event listener
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      const subTick = DeviceEventEmitter.addListener("onPipTick", () => {
+        checkCountdownTick();
+      });
+      return () => subTick?.remove();
+    }
+  }, [isActive]);
 
   // Format seconds to HH:MM:SS
   const formatTimeParts = (totalSecs) => {
@@ -425,7 +451,7 @@ export default function App() {
       const PipModule = NativeModules.PipModule;
       if (PipModule?.enterPipMode) {
         try {
-          await PipModule.enterPipMode(210, 100);
+          await PipModule.enterPipMode(190, 100);
         } catch (err) {
           console.warn("Failed to enter PiP mode:", err);
         }
@@ -1552,23 +1578,24 @@ const styles = StyleSheet.create({
   // ===================================
   purePipContainer: {
     flex: 1,
-    backgroundColor: "#080D1A",
+    backgroundColor: "#060A14",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(6, 182, 212, 0.4)",
-    borderRadius: 14,
-    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: "rgba(6, 182, 212, 0.45)",
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   purePipContainerRinging: {
-    backgroundColor: "rgba(239, 68, 68, 0.4)",
+    backgroundColor: "rgba(239, 68, 68, 0.45)",
     borderColor: "#EF4444",
   },
   purePipDigits: {
     color: "#F8FAFC",
-    fontSize: 27,
+    fontSize: 20,
     fontWeight: "900",
-    letterSpacing: 1.2,
+    letterSpacing: 0.6,
     textAlign: "center",
     includeFontPadding: false,
   },
@@ -1578,9 +1605,9 @@ const styles = StyleSheet.create({
   },
   purePipRingingText: {
     color: "#FFFFFF",
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "900",
-    letterSpacing: 1,
+    letterSpacing: 0.6,
     textAlign: "center",
     includeFontPadding: false,
   },
