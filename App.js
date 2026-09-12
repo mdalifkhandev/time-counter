@@ -30,7 +30,9 @@ const getDeviceCurrentTimeValues = () => {
   };
 };
 
-// Web Audio API Ringtone Synthesizer (Loud repeating alarm bell/buzzer)
+// Cross-Platform Alarm Ringer Manager
+// Android: Native Alarm Tone via MediaPlayer (PipModule)
+// Web / Electron: Web Audio API Synthesizer Chime
 class AlarmRingerManager {
   constructor() {
     this.ctx = null;
@@ -42,6 +44,17 @@ class AlarmRingerManager {
     if (this.isPlaying) return;
     this.isPlaying = true;
 
+    // Android native ringtone
+    if (Platform.OS === "android") {
+      try {
+        NativeModules.PipModule?.playAlarmSound();
+      } catch (err) {
+        console.warn("Android native alarm error:", err);
+      }
+      return;
+    }
+
+    // Web / PC Desktop Web Audio API
     const playBeepBurst = () => {
       if (!this.isPlaying) return;
       if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -96,6 +109,13 @@ class AlarmRingerManager {
 
   stop() {
     this.isPlaying = false;
+    if (Platform.OS === "android") {
+      try {
+        NativeModules.PipModule?.stopAlarmSound();
+      } catch (err) {
+        console.warn("Android stop alarm error:", err);
+      }
+    }
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
