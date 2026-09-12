@@ -12,6 +12,7 @@ import {
   Vibration,
   Dimensions,
   NativeModules,
+  DeviceEventEmitter,
 } from "react-native";
 
 // Helper: Get PC/Device current right time formatted for 12-hour AM/PM picker
@@ -184,6 +185,16 @@ export default function App() {
       window.electronAPI.getAlwaysOnTop().then((status) => {
         setIsAlwaysOnTop(status);
       });
+    }
+  }, []);
+
+  // Auto-detect Android PiP enter and exit to update mode
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      const sub = DeviceEventEmitter.addListener("onPipModeChanged", (isInPip) => {
+        setIsMiniMode(isInPip);
+      });
+      return () => sub?.remove();
     }
   }, []);
 
@@ -414,7 +425,7 @@ export default function App() {
       const PipModule = NativeModules.PipModule;
       if (PipModule?.enterPipMode) {
         try {
-          await PipModule.enterPipMode(238, 100);
+          await PipModule.enterPipMode(210, 100);
         } catch (err) {
           console.warn("Failed to enter PiP mode:", err);
         }
@@ -448,6 +459,25 @@ export default function App() {
   // MINI FLOATING WIDGET VIEW (Distraction-Free: ONLY Time Remaining Card)
   // ==========================================
   if (isMiniMode) {
+    if (Platform.OS === "android") {
+      return (
+        <TouchableOpacity
+          style={[styles.purePipContainer, isRinging && styles.purePipContainerRinging]}
+          activeOpacity={0.9}
+          onPress={isRinging ? handleStopRinging : null}
+        >
+          <StatusBar hidden={true} />
+          {isRinging ? (
+            <Text style={styles.purePipRingingText}>🔔 00:00:00</Text>
+          ) : (
+            <Text style={styles.purePipDigits}>
+              {hours}:{minutes}:<Text style={styles.purePipSeconds}>{seconds}</Text>
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+
     return (
       <SafeAreaView style={styles.miniSafeArea}>
         <StatusBar barStyle="light-content" backgroundColor="#090D16" />
@@ -1515,5 +1545,43 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#06B6D4",
     borderRadius: 2,
+  },
+
+  // ===================================
+  // PURE MINIMALIST ANDROID FLOATING CARD
+  // ===================================
+  purePipContainer: {
+    flex: 1,
+    backgroundColor: "#080D1A",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(6, 182, 212, 0.4)",
+    borderRadius: 14,
+    paddingHorizontal: 6,
+  },
+  purePipContainerRinging: {
+    backgroundColor: "rgba(239, 68, 68, 0.4)",
+    borderColor: "#EF4444",
+  },
+  purePipDigits: {
+    color: "#F8FAFC",
+    fontSize: 27,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+    textAlign: "center",
+    includeFontPadding: false,
+  },
+  purePipSeconds: {
+    color: "#06B6D4",
+    fontWeight: "900",
+  },
+  purePipRingingText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "900",
+    letterSpacing: 1,
+    textAlign: "center",
+    includeFontPadding: false,
   },
 });
