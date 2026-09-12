@@ -514,9 +514,16 @@ export default function App() {
         >
           <StatusBar hidden={true} />
           {isRinging ? (
-            <Text style={styles.purePipRingingText}>🔔 00:00:00</Text>
+            <Text style={styles.purePipRingingText} numberOfLines={1} adjustsFontSizeToFit={true}>
+              🔔 00:00:00
+            </Text>
           ) : (
-            <Text style={styles.purePipDigits}>
+            <Text
+              style={styles.purePipDigits}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.7}
+            >
               {hours}:{minutes}:<Text style={styles.purePipSeconds}>{seconds}</Text>
             </Text>
           )}
@@ -1612,9 +1619,9 @@ const styles = StyleSheet.create({
   },
   purePipDigits: {
     color: "#F8FAFC",
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "900",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     textAlign: "center",
     includeFontPadding: false,
   },
@@ -1624,9 +1631,9 @@ const styles = StyleSheet.create({
   },
   purePipRingingText: {
     color: "#FFFFFF",
-    fontSize: 18,
+    fontSize: 26,
     fontWeight: "900",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     textAlign: "center",
     includeFontPadding: false,
   },
