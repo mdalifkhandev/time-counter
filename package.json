@@ -21,23 +21,28 @@
     "clean:win": "node -e \"const fs=require('fs'); ['release/win-unpacked','release/win-unpacked.tmp'].forEach(p => fs.rmSync(p, {recursive:true, force:true}))\"",
     "build:web": "expo export --platform web",
     "build:win": "npm run clean:win && npm run build:web && electron-builder --win",
-    "build:portable": "npm run clean:win && npm run build:web && electron-builder --win portable"
+    "build:portable": "npm run clean:win && npm run build:web && electron-builder --win portable",
+    "build:linux": "npm run clean:win && npm run build:web && electron-builder --linux",
+    "build:android": "powershell -Command \"cd android; .\\gradlew.bat assembleRelease; cd ..; Copy-Item android\\app\\build\\outputs\\apk\\release\\app-release.apk release\\Time-Management.apk -Force\""
   },
   "build": {
     "appId": "com.timemanagement.app",
     "productName": "Time Management",
-    "asar": false,
+    "asar": true,
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "!**/node_modules/**/*"
     ],
     "extraMetadata": {
-      "main": "electron/main.js"
+      "main": "electron/main.js",
+      "dependencies": {}
     },
+    "nodeGypRebuild": false,
+    "npmRebuild": false,
     "win": {
       "icon": "assets/icon.png",
       "target": [
@@ -49,6 +54,13 @@
       "oneClick": true,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        "tar.gz"
+      ],
+      "category": "Utility"
     }
   },
   "private": true,
