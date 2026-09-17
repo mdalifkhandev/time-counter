@@ -104,12 +104,12 @@ jobs:
         run: |
           cd ios
           pod install
-          xcodebuild -workspace *.xcworkspace -scheme "Time Management" -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=No
+          xcodebuild -workspace TimeManagement.xcworkspace -scheme TimeManagement -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=No
 
       - name: Compress iOS App
         run: |
           cd ios/build/Build/Products/Release-iphonesimulator
-          tar -czf Time-Management-ios-Simulator.tar.gz "Time Management.app"
+          tar -czf Time-Management-ios-Simulator.tar.gz "TimeManagement.app"
 
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v4
