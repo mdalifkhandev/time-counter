@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -35,6 +35,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: npx electron-builder --linux tar.gz --publish never
 
+      - name: Build macos .dmg & .zip
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac dmg zip --publish never
+
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -42,6 +46,8 @@ jobs:
           path: |
             release/*.exe
             release/*.tar.gz
+            release/*.dmg
+            release/*.zip
 
   build-android:
     runs-on: ubuntu-latest
@@ -76,8 +82,43 @@ jobs:
           name: android-apk
           path: android/app/build/outputs/apk/release/*.apk
 
+  build-ios:
+    runs-on: macos-latest
+    steps: 
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Prebuild ios Native Project
+        run: npx expo prebuild --platform ios
+
+      - name: Build iOS Simulator App
+        run: |
+          cd ios
+          pod install
+          xcodebuild -workspace *.xcworkspace -scheme "Time Management" -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=No
+
+      - name: Compress iOS App
+        run: |
+          cd ios/build/Build/Products/Release-iphonesimulator
+          tar -czf Time-Management-ios-Simulator.tar.gz "Time Management.app"
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: ios/build/Build/Products/Release-iphonesimulator/Time-Management-ios-Simulator.tar.gz
+
   create-release:
-    needs: [build-desktop, build-android]
+    needs: [build-desktop, build-android, build-ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -91,6 +132,9 @@ jobs:
           files: |
             desktop-artifacts-windows-latest/*.exe
             desktop-artifacts-ubuntu-latest/*.tar.gz
+            desktop-artifacts-macos-latest/*.dmg
+            desktop-artifacts-macos-latest/*.zip
             android-apk/*.apk
+            ios-app/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
