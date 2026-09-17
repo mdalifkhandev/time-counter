@@ -61,6 +61,14 @@
         "tar.gz"
       ],
       "category": "Utility"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
     }
   },
   "private": true,
