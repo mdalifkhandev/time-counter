@@ -58,7 +58,10 @@
     "linux": {
       "icon": "assets/icon.png",
       "target": [
-        "tar.gz"
+        "tar.gz",
+        "AppImage",
+        "deb",
+        "rpm"
       ],
       "category": "Utility"
     },
