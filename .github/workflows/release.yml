@@ -31,9 +31,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: npx electron-builder --win --publish never
 
-      - name: Build Linux .tar.gz
+      - name: Build Linux targets
         if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder --linux tar.gz --publish never
+        run: npx electron-builder --linux --publish never
 
       - name: Build macos .dmg & .zip
         if: matrix.os == 'macos-latest'
@@ -48,6 +48,9 @@ jobs:
             release/*.tar.gz
             release/*.dmg
             release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
 
   build-android:
     runs-on: ubuntu-latest
@@ -132,6 +135,9 @@ jobs:
           files: |
             desktop-artifacts-windows-latest/*.exe
             desktop-artifacts-ubuntu-latest/*.tar.gz
+            desktop-artifacts-ubuntu-latest/*.AppImage
+            desktop-artifacts-ubuntu-latest/*.deb
+            desktop-artifacts-ubuntu-latest/*.rpm
             desktop-artifacts-macos-latest/*.dmg
             desktop-artifacts-macos-latest/*.zip
             android-apk/*.apk
