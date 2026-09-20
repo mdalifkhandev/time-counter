@@ -1,6 +1,10 @@
 {
   "name": "time-management",
   "version": "1.0.0",
+  "author": {
+    "name": "MD. Alif Khan",
+    "email": "mdalifk2002@gmail.com"
+  },
   "main": "index.js",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
